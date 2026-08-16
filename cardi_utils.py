@@ -1,10 +1,4 @@
-"""Shared utilities for the CardI-HACK HCM progression models.
-
-Extracted from CARDI_full_code.ipynb. Everything here is target-agnostic:
-competition metrics, LightGBM cross-validation plumbing, and SHAP-based SNP
-ranking. The target-specific model search functions live in the notebooks
-(01_severity_model.ipynb and 02_mace_model.ipynb).
-"""
+"""Shared utilities for the CardI-HACK HCM progression models."""
 
 import os
 from dataclasses import dataclass
@@ -22,20 +16,18 @@ from sklearn.model_selection import StratifiedKFold, train_test_split
 # Data loading and shared configuration
 # =============================================================================
 
-# Label weights used by the competition metrics.
+# Reweighting for the two outcomes, used in both training and evaluation.
 severity_weights = {0: 1.5, 1: 1.0}
 mace_weights = {0: 1, 1: 3, 2: 4}
 
 
 def load_data(data_dir: str = ".") -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Load the competition train/test CSVs."""
     train = pd.read_csv(os.path.join(data_dir, "cardihack_final_train.csv"))
     test = pd.read_csv(os.path.join(data_dir, "cardihack_final_test.csv"))
     return train, test
 
 
 def get_snp_cols(train: pd.DataFrame) -> list[str]:
-    """All SNP feature columns, in dataframe order."""
     return [c for c in train.columns if c.startswith("SNP")]
 
 
@@ -90,7 +82,7 @@ def _weighted_mean_abs_shap(shap_vals: np.ndarray, weights: np.ndarray | None) -
 # =============================================================================
 
 def weighted_logloss_binary(y_true: np.ndarray, p1: np.ndarray, label_weights: dict[int, float]) -> float:
-    # manual weighted logloss to avoid sklearn dependency here
+    # manual weighted logloss to avoid sklearn dependency
     eps = 1e-15
     p1 = np.clip(np.asarray(p1, dtype=float), eps, 1 - eps)
     y_true = np.asarray(y_true, dtype=int)
@@ -187,7 +179,7 @@ def optimize_thresholds_for_weighted_qwk(
     n_grid: int = 40
 ) -> tuple[float, float, float]:
     """
-    Brute-force-ish threshold search on quantile grid:
+    Threshold search on quantile grid:
     returns (best_t1, best_t2, best_qwk)
     """
     y_true = np.asarray(y_true, dtype=int)
@@ -210,7 +202,7 @@ def optimize_thresholds_for_weighted_qwk(
 
 
 # =============================================================================
-# LightGBM cross-validation plumbing
+# LightGBM cross-validation
 # =============================================================================
 
 @dataclass(frozen=True)
